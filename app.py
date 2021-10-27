@@ -1,7 +1,12 @@
-from flask import Flask, Response, request, render_template
+from flask import Flask, Response, request, render_template, redirect, url_for
+from flask_dance.contrib.google import make_google_blueprint, google
 #import database_services.RDBService as d_service
 from flask_cors import CORS
+from flask_login import (LoginManager, UserMixin,
+                         current_user, login_user, logout_user)
+
 import json
+import os
 
 from application_services.imdb_artists_resource import IMDBArtistResource
 from database_services.RDBService import RDBService as d_service
@@ -11,11 +16,42 @@ from application_services.movie_history_resource import movieHistoryResource as 
 
 app = Flask(__name__)
 CORS(app)
+'''
+app.secret_key = "my secret"
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'
 
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'google.login'
+
+google_blueprint = make_google_blueprint(
+    client_id='465027598861-l7monq88hmfda0mf4f6tounoomqao4vc.apps.googleusercontent.com',
+    client_secret='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',
+    scope=['profile', 'email'])
+
+app.register_blueprint(google_blueprint, url_prefix="/login")
+
+gb = app.blueprints.get('google')
+
+
+@app.route('/login')
+def google_login():
+    if not google.authorized:
+        return redirect(url_for('google.login'))
+    access_token = google_blueprint.session.access_token
+    print("This user is authorized, this is their token: \n", access_token)
+    return redirect(url_for('get_users'))
+'''
 
 @app.route('/')
-def hello_world():
-    return 'Hello Patis World!'
+def index():
+    # google_data = None
+    # user_info_endpoint = 'oauth2/v2/userinfo'
+    # if current_user.is_authenticated and google.authorized:
+    #     google_data = google.get(user_info_endpoint).json()
+
+    return 'Hello Patis World! This is main page'
     # return render_template(static/simple-test.html)
 
 
