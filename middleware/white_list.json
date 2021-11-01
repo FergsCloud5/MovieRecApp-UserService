@@ -1,0 +1,6 @@
+{
+  "/login/google": ["GET"],
+  "/login/google/authorized": ["GET"],
+  "/": ["GET"],
+  "/users": ["GET", "POST"]
+}
