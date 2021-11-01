@@ -1,22 +1,74 @@
-from flask import Flask, Response, request, render_template
-#import database_services.RDBService as d_service
-from flask_cors import CORS
 import json
 
-from application_services.imdb_artists_resource import IMDBArtistResource
-from database_services.RDBService import RDBService as d_service
-from application_services.user_resource import userResource as u_service
+import boto3
+from flask import Flask, Response, request, redirect, url_for, session
+from flask_cors import CORS
+from flask_login import (LoginManager, login_required)
+
 from application_services.address_resource import addressResource as a_service
+from application_services.imdb_artists_resource import IMDBArtistResource
 from application_services.movie_history_resource import movieHistoryResource as h_service
+from application_services.user_resource import userResource as u_service
+from database_services.RDBService import RDBService as d_service
+from middleware.notification import Notifications
+from middleware.simple_security import Security
+
+snsClient = boto3.client(
+    'sns',
+    aws_access_key_id="AKIASQOWTMP3OLSP2UH5",
+    aws_secret_access_key="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",
+    region_name='us-east-1'
+)
+
+topicArn = "arn:aws:sns:us-east-1:172785624054:UserPosted"
 
 app = Flask(__name__)
 CORS(app)
+sec = Security()
+
+userSNSTopic = Notifications(snsClient, topicArn)
+
+app.secret_key = "my secret"
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'google.login'
+
+gb = sec.get_google_blueprint()
+app.register_blueprint(gb, url_prefix="/login")
+
+
+# gb = app.blueprints.get('google')
+
+@app.before_request
+def before_request():
+    print("before_request is running!")
+    print("request.path:", request.path)
+
+    a_ok = sec.check_authentication(request.path)
+    print("a_ok:", a_ok)
+    if a_ok[0] != 200:
+        session["next_url"] = request.base_url
+        return redirect(url_for('google.login'))
+
+
+@app.after_request
+def after_request(response):
+    # print(json.dumps(response))
+    path = request.path
+    method = request.method
+    body = request.get_json()
+    SNS_response = userSNSTopic.check_user_notif(path, method, body, response)
+    return response
 
 
 @app.route('/')
 def hello_world():
+    next_url = session.get("next_url", None)
+    if next_url:
+        session.pop("next_url", None)
+        return redirect(next_url)
     return 'Hello Patis World!'
-    # return render_template(static/simple-test.html)
 
 
 @app.route('/imdb/artists/<prefix>')
@@ -31,6 +83,7 @@ def get_by_prefix(db_schema, table_name, column_name, prefix):
     res = d_service.get_by_prefix(db_schema, table_name, column_name, prefix)
     rsp = Response(json.dumps(res), status=200, content_type="application/json")
     return rsp
+
 
 @app.route('/users', methods=['GET', 'POST'])
 def get_users():
@@ -55,6 +108,7 @@ def get_users():
     else:
         rsp = Response("NOT IMPLEMENTED", status=501)
         return rsp
+
 
 @app.route('/users/<userID>', methods=['GET', 'PUT', 'DELETE'])
 def get_users_by_id(userID):
@@ -103,6 +157,7 @@ def get_address_by_user(userID):
         rsp = Response("NOT IMPLEMENTED", status=501)
         return rsp
 
+
 @app.route('/addresses', methods=['GET', 'POST'])
 def get_addresses():
     if request.method == 'GET':
@@ -125,7 +180,8 @@ def get_addresses():
         rsp = Response("NOT IMPLEMENTED", status=501)
         return rsp
 
-@app.route('/addresses/<addressID>', methods=['GET','PUT', 'DELETE'])
+
+@app.route('/addresses/<addressID>', methods=['GET', 'PUT', 'DELETE'])
 def get_addresses_by_id(addressID):
     if request.method == 'GET':
         res = a_service.get_address_by_id(addressID)
@@ -157,6 +213,7 @@ def get_addresses_by_id(addressID):
     else:
         rsp = Response("NOT IMPLEMENTED", status=501)
         return rsp
+
 
 @app.route('/addresses/<addressID>/users', methods=['GET'])
 def get_users_by_address(addressID):
@@ -210,6 +267,7 @@ def get_history_by_user_id(userID):
         rsp = Response("NOT IMPLEMENTED", status=501)
         return rsp
 
+
 @app.route('/movie-histories/movie/<movieID>', methods=['GET'])
 def get_history_by_movie_id(movieID):
     if request.method == 'GET':
@@ -223,6 +281,7 @@ def get_history_by_movie_id(movieID):
         rsp = Response("NOT IMPLEMENTED", status=501)
         return rsp
 
+
 @app.route('/movie-histories/<userID>/likedMovies', methods=['GET'])
 def get_liked_movie_history_by_user_id(userID):
     if request.method == 'GET':
@@ -235,6 +294,7 @@ def get_liked_movie_history_by_user_id(userID):
     else:
         rsp = Response("NOT IMPLEMENTED", status=501)
         return rsp
+
 
 @app.route('/movie-histories/<userID>/<movieID>', methods=['GET', 'DELETE'])
 def get_history_by_user_movie_id(userID, movieID):

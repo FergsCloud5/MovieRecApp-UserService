@@ -31,3 +31,4 @@ def get_db_info():
         }
 
     return db_info
+
