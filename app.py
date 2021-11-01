@@ -6,6 +6,8 @@ from flask_login import (LoginManager, UserMixin,
                          current_user, login_user, logout_user)
 
 import json
+import logging
+import sys
 import os
 
 from application_services.imdb_artists_resource import IMDBArtistResource
@@ -139,6 +141,7 @@ def get_address_by_user(userID):
         rsp = Response("NOT IMPLEMENTED", status=501)
         return rsp
 
+
 @app.route('/addresses', methods=['GET', 'POST'])
 def get_addresses():
     if request.method == 'GET':
@@ -149,11 +152,16 @@ def get_addresses():
         rsp = Response(json.dumps(res), status=200, content_type="application/json")
         return rsp
     elif request.method == 'POST':
+        logging.info("in post")
         try:
-            body = request.get_json()
+            body = request.get_json(force=True)
             res = a_service.add_address(body)
-            rsp = Response("CREATED", status=201, content_type='application/json')
-            return rsp
+            if res:
+                rsp = Response("CREATED", status=201, content_type='application/json')
+                return rsp
+            else:
+                rsp = Response("UNPROCESSABLE ENTITY", status=422, content_type='text/plain')
+                return rsp
         except:
             rsp = Response("UNPROCESSABLE ENTITY", status=422, content_type='text/plain')
             return rsp
