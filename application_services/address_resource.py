@@ -1,5 +1,9 @@
 from application_services.BaseApplicationResource import BaseApplicationResource
 from database_services.RDBService import RDBService
+from application_services.smarty_address_service import SmartyAddressService
+from application_services.base_address_service import AddressDataTransferObject
+import sys
+import logging
 
 
 class addressResource(BaseApplicationResource):
@@ -23,7 +27,16 @@ class addressResource(BaseApplicationResource):
 
     @classmethod
     def add_address(cls, address):
-        return RDBService.create("user_service", "address", address)
+        if not address:
+            return None
+        smarty = SmartyAddressService()
+        address_dto = AddressDataTransferObject(address)
+        smarty_address = smarty.lookup(address_dto)
+        if smarty_address:
+            # TODO: put smarty_address into db
+            return RDBService.create("user_service", "address", address)
+        else:
+            return None
 
     @classmethod
     def update_address(cls, id, update_data):

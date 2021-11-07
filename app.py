@@ -1,8 +1,14 @@
 import json
+import logging
+import sys
+import os
 
 from flask import Flask, Response, request, redirect, url_for, session
 from flask_cors import CORS
-from flask_login import (LoginManager, login_required)
+from flask_dance.contrib.google import make_google_blueprint, google
+#import database_services.RDBService as d_service
+from flask_login import (LoginManager, UserMixin,
+                         current_user, login_user, logout_user)
 
 from application_services.address_resource import addressResource as a_service
 from application_services.imdb_artists_resource import IMDBArtistResource
@@ -14,10 +20,9 @@ from middleware.simple_security import Security
 
 app = Flask(__name__)
 CORS(app)
+
 sec = Security()
-
 userSNSTopic = Notifications()
-
 app.secret_key = "my secret"
 
 login_manager = LoginManager()
@@ -26,8 +31,6 @@ login_manager.login_view = 'google.login'
 
 gb = sec.get_google_blueprint()
 app.register_blueprint(gb, url_prefix="/login")
-
-# gb = app.blueprints.get('google')
 
 @app.before_request
 def before_request():
@@ -156,11 +159,16 @@ def get_addresses():
         rsp = Response(json.dumps(res), status=200, content_type="application/json")
         return rsp
     elif request.method == 'POST':
+        logging.info("in post")
         try:
-            body = request.get_json()
+            body = request.get_json(force=True)
             res = a_service.add_address(body)
-            rsp = Response("CREATED", status=201, content_type='application/json')
-            return rsp
+            if res:
+                rsp = Response("CREATED", status=201, content_type='application/json')
+                return rsp
+            else:
+                rsp = Response("UNPROCESSABLE ENTITY", status=422, content_type='text/plain')
+                return rsp
         except:
             rsp = Response("UNPROCESSABLE ENTITY", status=422, content_type='text/plain')
             return rsp
