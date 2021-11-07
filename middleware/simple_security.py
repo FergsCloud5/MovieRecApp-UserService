@@ -1,6 +1,7 @@
 import os
 import json
 from flask_dance.contrib.google import make_google_blueprint, google
+from middleware.context import get_google_info
 
 
 class Security:
@@ -14,9 +15,10 @@ class Security:
         self.login_path = "/"
 
     def get_google_blueprint(self):
+        google_id, google_secret = get_google_info()
         return make_google_blueprint(
-            client_id='465027598861-l7monq88hmfda0mf4f6tounoomqao4vc.apps.googleusercontent.com',
-            client_secret='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',
+            client_id=google_id,
+            client_secret=google_secret,
             scope=['profile', 'email']
         )
 
