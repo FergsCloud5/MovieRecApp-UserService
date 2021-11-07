@@ -31,3 +31,18 @@ def get_db_info():
         }
 
     return db_info
+
+def get_sns_info():
+
+    sns_access_key_id = os.environ.get("SNS_ACCESS_KEY_ID", None)
+    sns_secret_key = os.environ.get("SNS_SECRET_KEY", None)
+    topic_arn = os.environ.get("TOPIC_ARN", None)
+
+    return sns_access_key_id, sns_secret_key, topic_arn
+
+def get_google_info():
+
+    google_id = os.environ.get("GOOGLE_ID", None)
+    google_secret = os.environ.get("GOOGLE_SECRET", None)
+
+    return google_id, google_secret

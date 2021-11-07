@@ -15,9 +15,9 @@ class userResource(BaseApplicationResource):
     def get_user_by_id(cls, id):
         return RDBService.find_by_template("user_service", "user",
                                            {"userID": id})
+
     @classmethod
     def get_address_by_user(cls, db_schema, table_name1, table_name2, resourceid):
-
         conn = RDBService._get_db_connection()
         cur = conn.cursor()
 

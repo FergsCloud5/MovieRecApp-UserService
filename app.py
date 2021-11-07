@@ -1,60 +1,65 @@
-from flask import Flask, Response, request, render_template, redirect, url_for
-from flask_dance.contrib.google import make_google_blueprint, google
-#import database_services.RDBService as d_service
-from flask_cors import CORS
-from flask_login import (LoginManager, UserMixin,
-                         current_user, login_user, logout_user)
-
 import json
 import logging
 import sys
 import os
 
-from application_services.imdb_artists_resource import IMDBArtistResource
-from database_services.RDBService import RDBService as d_service
-from application_services.user_resource import userResource as u_service
+from flask import Flask, Response, request, redirect, url_for, session
+from flask_cors import CORS
+from flask_dance.contrib.google import make_google_blueprint, google
+#import database_services.RDBService as d_service
+from flask_login import (LoginManager, UserMixin,
+                         current_user, login_user, logout_user)
+
 from application_services.address_resource import addressResource as a_service
+from application_services.imdb_artists_resource import IMDBArtistResource
 from application_services.movie_history_resource import movieHistoryResource as h_service
+from application_services.user_resource import userResource as u_service
+from database_services.RDBService import RDBService as d_service
+from middleware.notification import Notifications
+from middleware.simple_security import Security
 
 app = Flask(__name__)
 CORS(app)
-'''
+
+sec = Security()
+userSNSTopic = Notifications()
 app.secret_key = "my secret"
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'
 
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'google.login'
 
-google_blueprint = make_google_blueprint(
-    client_id='465027598861-l7monq88hmfda0mf4f6tounoomqao4vc.apps.googleusercontent.com',
-    client_secret='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',
-    scope=['profile', 'email'])
+gb = sec.get_google_blueprint()
+app.register_blueprint(gb, url_prefix="/login")
 
-app.register_blueprint(google_blueprint, url_prefix="/login")
+@app.before_request
+def before_request():
+    print("before_request is running!")
+    print("request.path:", request.path)
 
-gb = app.blueprints.get('google')
+    # a_ok = sec.check_authentication(request.path)
+    # print("a_ok:", a_ok)
+    # if a_ok[0] != 200:
+    #     session["next_url"] = request.base_url
+    #     return redirect(url_for('google.login'))
 
 
-@app.route('/login')
-def google_login():
-    if not google.authorized:
-        return redirect(url_for('google.login'))
-    access_token = google_blueprint.session.access_token
-    print("This user is authorized, this is their token: \n", access_token)
-    return redirect(url_for('get_users'))
-'''
+@app.after_request
+def after_request(response):
+    path = request.path
+    method = request.method
+    body = request.get_json()
+    SNS_response = userSNSTopic.check_user_notif(path, method, body, response)
+    return response
+
 
 @app.route('/')
-def index():
-    # google_data = None
-    # user_info_endpoint = 'oauth2/v2/userinfo'
-    # if current_user.is_authenticated and google.authorized:
-    #     google_data = google.get(user_info_endpoint).json()
-
-    return 'Hello Patis World! This is main page'
-    # return render_template(static/simple-test.html)
+def hello_world():
+    next_url = session.get("next_url", None)
+    if next_url:
+        session.pop("next_url", None)
+        return redirect(next_url)
+    return 'Hello Patis World!'
 
 
 @app.route('/imdb/artists/<prefix>')
@@ -69,6 +74,7 @@ def get_by_prefix(db_schema, table_name, column_name, prefix):
     res = d_service.get_by_prefix(db_schema, table_name, column_name, prefix)
     rsp = Response(json.dumps(res), status=200, content_type="application/json")
     return rsp
+
 
 @app.route('/users', methods=['GET', 'POST'])
 def get_users():
@@ -93,6 +99,7 @@ def get_users():
     else:
         rsp = Response("NOT IMPLEMENTED", status=501)
         return rsp
+
 
 @app.route('/users/<userID>', methods=['GET', 'PUT', 'DELETE'])
 def get_users_by_id(userID):
@@ -169,7 +176,8 @@ def get_addresses():
         rsp = Response("NOT IMPLEMENTED", status=501)
         return rsp
 
-@app.route('/addresses/<addressID>', methods=['GET','PUT', 'DELETE'])
+
+@app.route('/addresses/<addressID>', methods=['GET', 'PUT', 'DELETE'])
 def get_addresses_by_id(addressID):
     if request.method == 'GET':
         res = a_service.get_address_by_id(addressID)
@@ -201,6 +209,7 @@ def get_addresses_by_id(addressID):
     else:
         rsp = Response("NOT IMPLEMENTED", status=501)
         return rsp
+
 
 @app.route('/addresses/<addressID>/users', methods=['GET'])
 def get_users_by_address(addressID):
@@ -254,6 +263,7 @@ def get_history_by_user_id(userID):
         rsp = Response("NOT IMPLEMENTED", status=501)
         return rsp
 
+
 @app.route('/movie-histories/movie/<movieID>', methods=['GET'])
 def get_history_by_movie_id(movieID):
     if request.method == 'GET':
@@ -267,6 +277,7 @@ def get_history_by_movie_id(movieID):
         rsp = Response("NOT IMPLEMENTED", status=501)
         return rsp
 
+
 @app.route('/movie-histories/<userID>/likedMovies', methods=['GET'])
 def get_liked_movie_history_by_user_id(userID):
     if request.method == 'GET':
@@ -279,6 +290,7 @@ def get_liked_movie_history_by_user_id(userID):
     else:
         rsp = Response("NOT IMPLEMENTED", status=501)
         return rsp
+
 
 @app.route('/movie-histories/<userID>/<movieID>', methods=['GET', 'DELETE'])
 def get_history_by_user_movie_id(userID, movieID):
