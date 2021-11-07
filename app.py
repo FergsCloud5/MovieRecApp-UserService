@@ -1,6 +1,5 @@
 import json
 
-import boto3
 from flask import Flask, Response, request, redirect, url_for, session
 from flask_cors import CORS
 from flask_login import (LoginManager, login_required)
@@ -13,20 +12,11 @@ from database_services.RDBService import RDBService as d_service
 from middleware.notification import Notifications
 from middleware.simple_security import Security
 
-snsClient = boto3.client(
-    'sns',
-    aws_access_key_id="AKIASQOWTMP3OLSP2UH5",
-    aws_secret_access_key="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",
-    region_name='us-east-1'
-)
-
-topicArn = "arn:aws:sns:us-east-1:172785624054:UserPosted"
-
 app = Flask(__name__)
 CORS(app)
 sec = Security()
 
-userSNSTopic = Notifications(snsClient, topicArn)
+userSNSTopic = Notifications()
 
 app.secret_key = "my secret"
 
@@ -37,7 +27,6 @@ login_manager.login_view = 'google.login'
 gb = sec.get_google_blueprint()
 app.register_blueprint(gb, url_prefix="/login")
 
-
 # gb = app.blueprints.get('google')
 
 @app.before_request
@@ -45,16 +34,15 @@ def before_request():
     print("before_request is running!")
     print("request.path:", request.path)
 
-    a_ok = sec.check_authentication(request.path)
-    print("a_ok:", a_ok)
-    if a_ok[0] != 200:
-        session["next_url"] = request.base_url
-        return redirect(url_for('google.login'))
+    # a_ok = sec.check_authentication(request.path)
+    # print("a_ok:", a_ok)
+    # if a_ok[0] != 200:
+    #     session["next_url"] = request.base_url
+    #     return redirect(url_for('google.login'))
 
 
 @app.after_request
 def after_request(response):
-    # print(json.dumps(response))
     path = request.path
     method = request.method
     body = request.get_json()
