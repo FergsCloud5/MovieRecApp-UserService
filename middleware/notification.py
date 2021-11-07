@@ -1,11 +1,21 @@
 import json
 import logging
 
+import boto3
+
+from middleware.context import get_sns_info
+
 
 class Notifications:
 
-    def __init__(self, snsClient, topicArn):
-        self.snsClient = snsClient
+    def __init__(self):
+        key, secret, topicArn = get_sns_info()
+        self.snsClient = boto3.client(
+            'sns',
+            aws_access_key_id=key,
+            aws_secret_access_key=secret,
+            region_name='us-east-1'
+        )
         self.topicArn = topicArn
 
     def publish_message(self, subject, publish_object):
@@ -26,7 +36,10 @@ class Notifications:
             if path == "/users" and method == "POST":
                 res = self.publish_message(subject="USER POSTED",
                                            publish_object=body)
-                print("Published SNS Topic: USER POSTED")
+                if res == 200:
+                    print("Published SNS Topic: USER POSTED")
+                else:
+                    print("Issue with publishing to SNS Topic")
                 return response
 
             return False
