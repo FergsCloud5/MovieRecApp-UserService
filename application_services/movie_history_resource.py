@@ -8,6 +8,19 @@ class movieHistoryResource(BaseApplicationResource):
         super().__init__()
 
     @classmethod
+    def get_links(cls, resource_data):
+        for r in resource_data:
+            address_id = r.get('addressID')
+            user_id = r.get('userID')
+
+            links = []
+            self_link = {"rel": "self", "href": "/addresses/" + str(address_id)}
+            links.append(self_link)
+
+            r["links"] = links
+        return resource_data
+
+    @classmethod
     def get_all_history(cls):
         return RDBService.get_resource("user_service", "userMovieHistory")
 
