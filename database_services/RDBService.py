@@ -49,7 +49,7 @@ class RDBService:
         return res
 
     @classmethod
-    def run_sql(cls, sql_statement, args, fetch=False):
+    def run_sql(cls, sql_statement, args, fetch=False, id=False):
 
         conn = RDBService._get_db_connection()
 
@@ -63,6 +63,10 @@ class RDBService:
             conn.close()
             print(e)
             raise e
+        if id:
+            print("ID OF LAST CREATED OBJECT" + str(conn.insert_id()))
+            insertedId = conn.insert_id()
+            return res, insertedId
 
         return res
 
@@ -119,7 +123,7 @@ class RDBService:
         sql_stmt = "insert into " + db_schema + "." + table_name + " " + cols_clause + \
                    " " + vals_clause
 
-        res = RDBService.run_sql(sql_stmt, args)
+        res = RDBService.run_sql(sql_stmt, args, id=True)
         return res
 
     @classmethod
