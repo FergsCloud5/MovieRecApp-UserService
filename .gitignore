@@ -1,0 +1,9 @@
+.idea/
+application_services/__pycache__/address_resource.cpython-39.pyc
+application_services/__pycache__/base_address_service.cpython-39.pyc
+application_services/__pycache__/movie_history_resource.cpython-39.pyc
+application_services/__pycache__/smarty_address_service.cpython-39.pyc
+application_services/__pycache__/user_resource.cpython-39.pyc
+middleware/__pycache__/notification.cpython-39.pyc
+middleware/__pycache__/simple_security.cpython-39.pyc
+
