@@ -21,7 +21,7 @@ class RDBService:
     def _get_db_connection(cls):
 
         db_connect_info = context.get_db_info()
-
+        print(db_connect_info)
         logger.info("RDBService._get_db_connection:")
         logger.info("\t HOST = " + db_connect_info['host'])
 
@@ -199,8 +199,9 @@ class RDBService:
 
         conn = cls._get_db_connection()
         cur = conn.cursor()
-
-        sql = "delete from " + db_schema + "." + table_name + " where userID = " + userID + " and movieID = " + movieID
+        print("TYPE", type(movieID))
+        sql = "delete from " + db_schema + "." + table_name + " where userID = " + userID + " and movieID = \"" \
+              + movieID + "\""
         print("SQL Statement = " + cur.mogrify(sql, None))
         res = cur.execute(sql)
 

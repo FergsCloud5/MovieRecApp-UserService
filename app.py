@@ -215,7 +215,7 @@ def get_addresses():
         return rsp
 
 
-@app.route('/addresses/<addressID>', methods=['GET','PUT', 'DELETE'])
+@app.route('/addresses', methods=['GET','PUT', 'DELETE'])
 def get_addresses_by_id(addressID):
     if request.method == 'GET':
         res = a_service.get_address_by_id(addressID)
@@ -296,6 +296,7 @@ def get_movie_histories():
         try:
             body = request.get_json()
             h_service.add_history(body)
+            print(body)
             location = "/movie-histories/" + str(body['userID']) + "/" + str(body['movieID'])
             statusRespDict = {
                 "status": "201 CREATED",

@@ -10,11 +10,11 @@ class movieHistoryResource(BaseApplicationResource):
     @classmethod
     def get_links(cls, resource_data):
         for r in resource_data:
-            address_id = r.get('addressID')
+            movie_id = r.get('movieID')
             user_id = r.get('userID')
 
             links = []
-            self_link = {"rel": "self", "href": "/addresses/" + str(address_id)}
+            self_link = {"rel": "self", "href": "/movie-histories/" + str(user_id) + "/" + str(movie_id)}
             links.append(self_link)
 
             r["links"] = links
