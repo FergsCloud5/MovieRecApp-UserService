@@ -19,12 +19,12 @@ import os
 #
 aws_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID", None)
 aws_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY", None)
-
+aws_default_region = os.environ.get("AWS_DEFAULT_REGION", None)
 
 dynamodb = boto3.resource('dynamodb',
                           aws_access_key_id=aws_access_key_id,
                           aws_secret_access_key=aws_secret_access_key,
-                          region_name='us-east-2')
+                          region_name=aws_default_region)
 
 other_client = boto3.client("dynamodb")
 
@@ -125,7 +125,6 @@ def add_response(table_name, comment_id, commenter_email, response):
 
 
 def find_by_template(table_name, template):
-
 
     fe = ' AND '.join(['{0}=:{0}'.format(k) for k, v in template.items()])
     ea = {':{}'.format(k):v for k, v in template.items()}
